@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_srvs
   OpenCV 
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,12 +51,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
+add_message_files(
+      FILES
+      RobotInfo_msg.msg
+    )
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -71,10 +70,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   robotinfo_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   geometry_msgs robotinfo_msgs  nav_msgs#   
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_gui
-   CATKIN_DEPENDS roscpp #geometry_msgs nav_msgs robotinfo_msgs roscpp std_srvs
+   CATKIN_DEPENDS roscpp robotinfo_msgs geometry_msgs nav_msgs  roscpp std_srvs
 #  DEPENDS system_lib
 )
 
@@ -210,5 +209,16 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 add_executable(checkpoint4_node src/checkpoint4.cpp)
-target_link_libraries( checkpoint4_node ${OpenCV_LIBS} )
+target_link_libraries( checkpoint4_node 
+${OpenCV_LIBS}
+ ${catkin_LIBRARIES}  
+ )
 set_property(TARGET checkpoint4_node PROPERTY CXX_STANDARD 11)
+add_dependencies(checkpoint4_node robot_gui_generate_messages_cpp)
+
+
+add_executable(distance_travelled_service_node src/distance_travelled_service_node.cpp)
+target_link_libraries(distance_travelled_service_node
+ ${catkin_LIBRARIES}  
+ )
+add_dependencies(distance_travelled_service_node robot_gui_generate_messages_cpp)

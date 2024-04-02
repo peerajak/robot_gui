@@ -3,9 +3,15 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #define CVUI_IMPLEMENTATION
+#include "nav_msgs/Odometry.h"
 #include "odometry_messages_gui/cvui.h"
+#include "robot_gui/RobotInfo_msg.h"
 #include <deque>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/Twist.h>
+#include <ros/ros.h>
 #include <string>
+#include <tf/tf.h>
 
 #define WINDOW_NAME "Info"
 double scaling = 1.0;
@@ -36,14 +42,38 @@ public:
     }
   };
 };
+MessageQ window_queue(7);
+float robot_odom_x = 0;
+float robot_odom_y = 0;
+float robot_odom_z = 0;
 
-int main(int argc, const char *argv[]) {
+void robot_infoCallback(const robot_gui::RobotInfo_msg::ConstPtr &msg) {
+  // ROS_INFO("%s", msg->data_field_01.c_str());
+  std::string d1(msg->data_field_01.c_str());
+  window_queue.insertMessageQ(d1);
+};
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr &msg) {
+  // ROS_INFO("%f, %f, %f", msg->pose.pose.orientation.x,
+  // msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+  robot_odom_x = msg->pose.pose.orientation.x;
+  robot_odom_y = msg->pose.pose.orientation.y;
+  robot_odom_z = msg->pose.pose.orientation.z;
+};
+
+int main(int argc, char **argv) {
+  ros::init(argc, argv, "robot_gui_subscriber");
   bool checked = false;
   bool checked2 = true;
   int count = 0;
   double trackbarValue = 0.0;
   char textBuffer[40];
-  MessageQ window_queue(7);
+
+  ros::NodeHandle nh;
+  ros::Subscriber sub_r = nh.subscribe<robot_gui::RobotInfo_msg>(
+      "robot_info", 1000, robot_infoCallback);
+  ros::Subscriber sub_o = nh.subscribe("/odom", 1000, odomCallback);
+
   // Init cvui and tell it to create a OpenCV window, i.e.
   // cv::namedWindow(WINDOW_NAME).
   cvui::init(WINDOW_NAME);
@@ -52,6 +82,7 @@ int main(int argc, const char *argv[]) {
   cv::Mat frame;
 
   while (true) {
+
     if (scaling != currentScaling) {
       frame = cv::Mat(std::lround(scaling * 300), std::lround(scaling * 600),
                       CV_8UC3);
@@ -70,7 +101,7 @@ int main(int argc, const char *argv[]) {
     // using hex 0xRRGGBB CSS-like style.
     sprintf(textBuffer, "Trackbar  %.2f", trackbarValue);
     std::string STextBuffer(textBuffer);
-    window_queue.insertMessageQ(STextBuffer);
+    // window_queue.insertMessageQ(STextBuffer);
     cvui::rect(frame, 10, 20, 230, 260, 0xaf55af);
     cvui::rect(frame, 250, 20, 345, 260, 0xaf55af);
     // cvui::text(frame, std::lround(scaling * 200), std::lround(scaling * 30),
@@ -167,16 +198,25 @@ int main(int argc, const char *argv[]) {
                scaling * cvui::DEFAULT_FONT_SCALE, 0xff0000);
     cvui::text(frame, std::lround(scaling * 300), std::lround(scaling * 150),
                "x", scaling * cvui::DEFAULT_FONT_SCALE * 1.5, 0xff0000);
+    char robot_odom_x_buffer[11];
+    char robot_odom_y_buffer[11];
+    char robot_odom_z_buffer[11];
+    sprintf(robot_odom_x_buffer, "%3.6f", robot_odom_x);
+    sprintf(robot_odom_y_buffer, "%3.6f", robot_odom_y);
+    sprintf(robot_odom_z_buffer, "%3.6f", robot_odom_z);
     cvui::text(frame, std::lround(scaling * 300), std::lround(scaling * 170),
-               "000.0000", scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
+               robot_odom_x_buffer, scaling * cvui::DEFAULT_FONT_SCALE,
+               0x00ff00);
     cvui::text(frame, std::lround(scaling * 400), std::lround(scaling * 150),
                "y", scaling * cvui::DEFAULT_FONT_SCALE * 1.5, 0xff0000);
     cvui::text(frame, std::lround(scaling * 400), std::lround(scaling * 170),
-               "000.0000", scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
+               robot_odom_y_buffer, scaling * cvui::DEFAULT_FONT_SCALE,
+               0x00ff00);
     cvui::text(frame, std::lround(scaling * 500), std::lround(scaling * 150),
                "z", scaling * cvui::DEFAULT_FONT_SCALE * 1.5, 0xff0000);
     cvui::text(frame, std::lround(scaling * 500), std::lround(scaling * 170),
-               "000.0000", scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
+               robot_odom_z_buffer, scaling * cvui::DEFAULT_FONT_SCALE,
+               0x00ff00);
 
     cvui::text(frame, std::lround(scaling * 300), std::lround(scaling * 195),
                "Distance Travelled", scaling * cvui::DEFAULT_FONT_SCALE,
@@ -197,7 +237,7 @@ int main(int argc, const char *argv[]) {
 
     // Show everything on the screen
     cv::imshow(WINDOW_NAME, frame);
-
+    ros::spinOnce();
     // Check if ESC key was pressed
     if (cv::waitKey(20) == 27) {
       break;
