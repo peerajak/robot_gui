@@ -1,5 +1,6 @@
 #include "geometry_msgs/Point.h"
 #include "nav_msgs/Odometry.h"
+#include "std_srvs/Trigger.h"
 #include <cmath>
 #include <numeric>
 #include <ros/ros.h>
@@ -42,6 +43,17 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr &msg) {
   position_list.append(msg->pose.pose.position);
 };
 
+bool getDistance_callback(std_srvs::Trigger::Request &req,
+                          std_srvs::Trigger::Response &res) {
+
+  res.success = true;
+  std::string resMessage(
+      std::to_string(position_list.get_travelled_distance()));
+  res.message = resMessage;
+  ROS_INFO("sending back response:true");
+  return res.success;
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "robot_gui_subscriber");
   bool checked = false;
@@ -52,6 +64,8 @@ int main(int argc, char **argv) {
 
   ros::NodeHandle nh;
   ros::Subscriber sub_o = nh.subscribe("/odom", 1000, odomCallback);
+  ros::ServiceServer getDistance_service =
+      nh.advertiseService("/get_distance", getDistance_callback);
   ros::Rate loop_rate(2);
   while (ros::ok()) {
     ROS_INFO("Robot has traveled %f meters so far",

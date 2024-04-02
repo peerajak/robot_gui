@@ -72,7 +72,7 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
    DEPENDENCIES
-   geometry_msgs robotinfo_msgs  nav_msgs#   
+   geometry_msgs robotinfo_msgs  nav_msgs std_srvs#   
  )
 
 ################################################
@@ -213,7 +213,8 @@ target_link_libraries( checkpoint4_node
 ${OpenCV_LIBS}
  ${catkin_LIBRARIES}  
  )
-set_property(TARGET checkpoint4_node PROPERTY CXX_STANDARD 11)
+set_property(TARGET checkpoint4_node PROPERTY CXX_STANDARD 20)
+set(CMAKE_BUILD_TYPE Debug)
 add_dependencies(checkpoint4_node robot_gui_generate_messages_cpp)
 
 
