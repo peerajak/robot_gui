@@ -208,14 +208,14 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-add_executable(checkpoint4_node src/checkpoint4.cpp)
-target_link_libraries( checkpoint4_node 
+add_executable(robot_gui_node src/robot_gui_node.cpp)
+target_link_libraries( robot_gui_node 
 ${OpenCV_LIBS}
  ${catkin_LIBRARIES}  
  )
-set_property(TARGET checkpoint4_node PROPERTY CXX_STANDARD 20)
+set_property(TARGET robot_gui_node PROPERTY CXX_STANDARD 20)
 set(CMAKE_BUILD_TYPE Debug)
-add_dependencies(checkpoint4_node robot_gui_generate_messages_cpp)
+add_dependencies(robot_gui_node robot_gui_generate_messages_cpp)
 
 
 add_executable(distance_travelled_service_node src/distance_travelled_service_node.cpp)

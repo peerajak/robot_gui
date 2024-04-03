@@ -24,10 +24,29 @@ public:
 
   float get_travelled_distance() {
     float travelled_distance = 0.0;
-    for (auto iter = std::next(_stop_list.begin()); iter < _stop_list.end();
-         iter++) {
-      travelled_distance += triangle_distance(*std::prev(iter), *iter);
+    if (_stop_list.size() >= 2) {
+      for (auto iter = std::next(_stop_list.begin()); iter < _stop_list.end();
+           iter++) {
+        travelled_distance += triangle_distance(*std::prev(iter), *iter);
+      }
     }
+
+    return travelled_distance;
+  };
+
+  float get_travelled_distance_lambda() {
+    float travelled_distance = 0.0;
+
+    auto triangle_distance_lambda =
+        [&travelled_distance](geometry_msgs::Point &a,
+                              geometry_msgs::Point &b) {
+          travelled_distance +=
+              std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
+          return b;
+        };
+    if (_stop_list.size() >= 2)
+      std::accumulate(std::next(_stop_list.begin()), _stop_list.end(),
+                      *_stop_list.begin(), triangle_distance_lambda);
 
     return travelled_distance;
   };
@@ -48,14 +67,14 @@ bool getDistance_callback(std_srvs::Trigger::Request &req,
 
   res.success = true;
   std::string resMessage(
-      std::to_string(position_list.get_travelled_distance()));
+      std::to_string(position_list.get_travelled_distance_lambda()));
   res.message = resMessage;
   ROS_INFO("sending back response:true");
   return res.success;
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "robot_gui_subscriber");
+  ros::init(argc, argv, "robot_gui_get_distance_service");
   bool checked = false;
   bool checked2 = true;
   int count = 0;
@@ -68,8 +87,8 @@ int main(int argc, char **argv) {
       nh.advertiseService("/get_distance", getDistance_callback);
   ros::Rate loop_rate(2);
   while (ros::ok()) {
-    ROS_INFO("Robot has traveled %f meters so far",
-             position_list.get_travelled_distance());
+    ROS_DEBUG("Robot has traveled %f meters so far",
+              position_list.get_travelled_distance());
     loop_rate.sleep();
     ros::spinOnce();
   }
