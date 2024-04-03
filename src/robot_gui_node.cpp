@@ -1,3 +1,4 @@
+#include "ros/publisher.h"
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -108,6 +109,18 @@ std::future<TriggerRespTuple> fut;
 std::future_status fut_status;
 std::chrono::milliseconds span(100);
 bool fut_got_initialized = false;
+geometry_msgs::Twist twst_msg;
+float linear_velocity_x = 0;
+float linear_velocity_y = 0;
+void setTwistMessage(float lx, float ly, float lz, float ax, float ay,
+                     float az) {
+  twst_msg.linear.x = lx;
+  twst_msg.linear.y = ly;
+  twst_msg.linear.z = lz;
+  twst_msg.angular.x = ax;
+  twst_msg.angular.y = ay;
+  twst_msg.angular.z = az;
+}
 int main(int argc, char **argv) {
   ros::init(argc, argv, "robot_gui_subscriber");
   bool checked = false;
@@ -124,7 +137,11 @@ int main(int argc, char **argv) {
       "/get_distance"); // wait for service to be running
   ros::ServiceClient getDistance_service =
       nh.serviceClient<std_srvs::Trigger>("/get_distance");
+
+  ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
   std_srvs::Trigger srv; // Create srv message
+
+  setTwistMessage(0, 0, 0, 0, 0, 0);
 
   // Init cvui and tell it to create a OpenCV window, i.e.
   // cv::namedWindow(WINDOW_NAME).
@@ -135,6 +152,7 @@ int main(int argc, char **argv) {
   signal(SIGINT, mySigintHandler);
   bool get_distance_success = false;
   std::string get_distance_message;
+  std::string linear_velocity;
   while (ros::ok()) {
 
     if (scaling != currentScaling) {
@@ -179,23 +197,44 @@ int main(int argc, char **argv) {
     const int botton_size = 30;
     const int botton_teleopt_position_x = 80;
     const int botton_teleopt_position_y = 80;
-    cvui::button(frame, std::lround(scaling * 80),
-                 std::lround(scaling * botton_teleopt_position_y),
-                 std::lround(scaling * botton_size * 2),
-                 std::lround(scaling * botton_size), "Mid",
-                 scaling * cvui::DEFAULT_FONT_SCALE);
-    cvui::button(
-        frame, std::lround(scaling * 80),
-        std::lround(scaling * (botton_teleopt_position_y - botton_size)),
-        std::lround(scaling * botton_size * 2),
-        std::lround(scaling * botton_size), "Up",
-        scaling * cvui::DEFAULT_FONT_SCALE);
-    cvui::button(
-        frame, std::lround(scaling * 80),
-        std::lround(scaling * (botton_teleopt_position_y + botton_size)),
-        std::lround(scaling * botton_size * 2),
-        std::lround(scaling * botton_size), "Down",
-        scaling * cvui::DEFAULT_FONT_SCALE);
+    const float botton_teleopt_step = 0.1;
+
+    if (cvui::button(frame, std::lround(scaling * 80),
+                     std::lround(scaling * botton_teleopt_position_y),
+                     std::lround(scaling * botton_size * 2),
+                     std::lround(scaling * botton_size), "Mid",
+                     scaling * cvui::DEFAULT_FONT_SCALE)) {
+    }
+    if (cvui::button(
+            frame, std::lround(scaling * 80),
+            std::lround(scaling * (botton_teleopt_position_y - botton_size)),
+            std::lround(scaling * botton_size * 2),
+            std::lround(scaling * botton_size), "Up",
+            scaling * cvui::DEFAULT_FONT_SCALE)) {
+      setTwistMessage(botton_teleopt_step, 0, 0, 0, 0, 0);
+      char robot_linear_velocity_buffer[11];
+      linear_velocity_x = botton_teleopt_step;
+      sprintf(robot_linear_velocity_buffer, "%3.6f", linear_velocity_x,
+              botton_teleopt_step);
+      linear_velocity = std::string(robot_linear_velocity_buffer);
+    }
+    ROS_INFO("linear_velocity %s", linear_velocity.c_str());
+
+    if (cvui::button(
+            frame, std::lround(scaling * 80),
+            std::lround(scaling * (botton_teleopt_position_y + botton_size)),
+            std::lround(scaling * botton_size * 2),
+            std::lround(scaling * botton_size), "Down",
+            scaling * cvui::DEFAULT_FONT_SCALE)) {
+      setTwistMessage(-botton_teleopt_step, 0, 0, 0, 0, 0);
+      char robot_linear_velocity_buffer[11];
+      linear_velocity_x = -1 * botton_teleopt_step;
+      sprintf(robot_linear_velocity_buffer, "%3.6f", linear_velocity_x,
+              botton_teleopt_step);
+      linear_velocity = std::string(robot_linear_velocity_buffer);
+    }
+
+    pub.publish(twst_msg);
     cvui::button(frame, std::lround(scaling * (80 - botton_size * 2)),
                  std::lround(scaling * botton_teleopt_position_y),
                  std::lround(scaling * botton_size * 2),
@@ -225,8 +264,10 @@ int main(int argc, char **argv) {
     //  to be changed.
     cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 40),
                "Linear Velocity", scaling * cvui::DEFAULT_FONT_SCALE, 0xff0000);
+
     cvui::text(frame, std::lround(scaling * 720), std::lround(scaling * 40),
-               "0", scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
+               linear_velocity.c_str(), scaling * cvui::DEFAULT_FONT_SCALE,
+               0x00ff00);
     cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 60),
                "Angular Velocity", scaling * cvui::DEFAULT_FONT_SCALE,
                0xff0000);
