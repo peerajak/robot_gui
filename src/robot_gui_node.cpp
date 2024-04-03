@@ -110,8 +110,9 @@ std::future_status fut_status;
 std::chrono::milliseconds span(100);
 bool fut_got_initialized = false;
 geometry_msgs::Twist twst_msg;
-float linear_velocity_x = 0;
-float linear_velocity_y = 0;
+const float botton_teleopt_step = 0.1;
+float linear_velocity_up = 0;
+float angular_velocity_left = 0;
 void setTwistMessage(float lx, float ly, float lz, float ax, float ay,
                      float az) {
   twst_msg.linear.x = lx;
@@ -152,7 +153,7 @@ int main(int argc, char **argv) {
   signal(SIGINT, mySigintHandler);
   bool get_distance_success = false;
   std::string get_distance_message;
-  std::string linear_velocity;
+
   while (ros::ok()) {
 
     if (scaling != currentScaling) {
@@ -197,13 +198,14 @@ int main(int argc, char **argv) {
     const int botton_size = 30;
     const int botton_teleopt_position_x = 80;
     const int botton_teleopt_position_y = 80;
-    const float botton_teleopt_step = 0.1;
 
     if (cvui::button(frame, std::lround(scaling * 80),
                      std::lround(scaling * botton_teleopt_position_y),
                      std::lround(scaling * botton_size * 2),
                      std::lround(scaling * botton_size), "Mid",
                      scaling * cvui::DEFAULT_FONT_SCALE)) {
+      linear_velocity_up = 0;
+      angular_velocity_left = 0;
     }
     if (cvui::button(
             frame, std::lround(scaling * 80),
@@ -211,14 +213,9 @@ int main(int argc, char **argv) {
             std::lround(scaling * botton_size * 2),
             std::lround(scaling * botton_size), "Up",
             scaling * cvui::DEFAULT_FONT_SCALE)) {
-      setTwistMessage(botton_teleopt_step, 0, 0, 0, 0, 0);
-      char robot_linear_velocity_buffer[11];
-      linear_velocity_x = botton_teleopt_step;
-      sprintf(robot_linear_velocity_buffer, "%3.6f", linear_velocity_x,
-              botton_teleopt_step);
-      linear_velocity = std::string(robot_linear_velocity_buffer);
+      linear_velocity_up = botton_teleopt_step;
+      angular_velocity_left = 0;
     }
-    ROS_INFO("linear_velocity %s", linear_velocity.c_str());
 
     if (cvui::button(
             frame, std::lround(scaling * 80),
@@ -226,29 +223,34 @@ int main(int argc, char **argv) {
             std::lround(scaling * botton_size * 2),
             std::lround(scaling * botton_size), "Down",
             scaling * cvui::DEFAULT_FONT_SCALE)) {
-      setTwistMessage(-botton_teleopt_step, 0, 0, 0, 0, 0);
-      char robot_linear_velocity_buffer[11];
-      linear_velocity_x = -1 * botton_teleopt_step;
-      sprintf(robot_linear_velocity_buffer, "%3.6f", linear_velocity_x,
-              botton_teleopt_step);
-      linear_velocity = std::string(robot_linear_velocity_buffer);
+      linear_velocity_up = -botton_teleopt_step;
+      angular_velocity_left = 0;
     }
 
-    pub.publish(twst_msg);
-    cvui::button(frame, std::lround(scaling * (80 - botton_size * 2)),
-                 std::lround(scaling * botton_teleopt_position_y),
-                 std::lround(scaling * botton_size * 2),
-                 std::lround(scaling * botton_size), "Left",
-                 scaling * cvui::DEFAULT_FONT_SCALE);
-    cvui::button(frame, std::lround(scaling * (80 + botton_size * 2)),
-                 std::lround(scaling * botton_teleopt_position_y),
-                 std::lround(scaling * botton_size * 2),
-                 std::lround(scaling * botton_size), "Right",
-                 scaling * cvui::DEFAULT_FONT_SCALE);
+    if (cvui::button(frame, std::lround(scaling * (80 - botton_size * 2)),
+                     std::lround(scaling * botton_teleopt_position_y),
+                     std::lround(scaling * botton_size * 2),
+                     std::lround(scaling * botton_size), "Left",
+                     scaling * cvui::DEFAULT_FONT_SCALE)) {
+      linear_velocity_up = 0;
+      angular_velocity_left = botton_teleopt_step;
+    }
+    if (cvui::button(frame, std::lround(scaling * (80 + botton_size * 2)),
+                     std::lround(scaling * botton_teleopt_position_y),
+                     std::lround(scaling * botton_size * 2),
+                     std::lround(scaling * botton_size), "Right",
+                     scaling * cvui::DEFAULT_FONT_SCALE)) {
+      linear_velocity_up = 0;
+      angular_velocity_left = -botton_teleopt_step;
+    }
     // Window components are useful td similars. At the
     // moment, there is no implementation to constraint content within a
     // a window.
-
+    // ROS_INFO("linear_velocity %s",
+    // std::to_string(linear_velocity_up).c_str()); ROS_INFO("angular_velocity
+    // %s", std::to_string(angular_velocity_left).c_str());
+    setTwistMessage(linear_velocity_up, 0, 0, 0, 0, angular_velocity_left);
+    pub.publish(twst_msg);
     cvui::window(frame, std::lround(scaling * 20), std::lround(scaling * 150),
                  std::lround(scaling * 500), std::lround(scaling * 400), "Info",
                  scaling * cvui::DEFAULT_FONT_SCALE);
@@ -266,23 +268,18 @@ int main(int argc, char **argv) {
                "Linear Velocity", scaling * cvui::DEFAULT_FONT_SCALE, 0xff0000);
 
     cvui::text(frame, std::lround(scaling * 720), std::lround(scaling * 40),
-               linear_velocity.c_str(), scaling * cvui::DEFAULT_FONT_SCALE,
-               0x00ff00);
+               std::to_string(linear_velocity_up).c_str(),
+               scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
     cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 60),
                "Angular Velocity", scaling * cvui::DEFAULT_FONT_SCALE,
                0xff0000);
     cvui::text(frame, std::lround(scaling * 720), std::lround(scaling * 60),
-               "0", scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
+               std::to_string(angular_velocity_left).c_str(),
+               scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
     // Counter can be used with doubles too. You can also specify
     // the counter's step (how much it should change
     // its value after each button press), as well as the format
     // used to print the value.
-
-    // The trackbar component can be used to create scales.
-    // It works with all numerical types (including chars).
-    cvui::trackbar(frame, std::lround(scaling * 600), std::lround(scaling * 80),
-                   std::lround(scaling * 150), &trackbarValue, 0., 50., 1,
-                   "%.1Lf", 0, 1.0, scaling * cvui::DEFAULT_FONT_SCALE);
 
     // Display the lib version at the bottom of the screen
     // cvui::printf(frame, frame.cols - std::lround(scaling * 80), frame.rows -
@@ -343,7 +340,7 @@ int main(int argc, char **argv) {
     }
 
     if (!get_distance_success)
-      get_distance_message = "ERROR Distance";
+      get_distance_message = "-------";
     cvui::text(frame, std::lround(scaling * 670), std::lround(scaling * 230),
                get_distance_message.c_str(), scaling * cvui::DEFAULT_FONT_SCALE,
                0x00ff00);
