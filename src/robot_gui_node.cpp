@@ -19,17 +19,20 @@
 #include <tuple>
 
 #define WINDOW_NAME "Info"
+#define NUMLINE_ROBOTINFO_MSG 10
+#define MAX_Q_SIZE 6
+
 double scaling = 1.0;
 
 class MessageQ {
 private:
-  std::deque<std::string> _message_q;
+  std::deque<std::string *> _message_q;
   int _max_q_size;
 
 public:
   MessageQ(int max_q_size) { this->_max_q_size = max_q_size; };
   ~MessageQ() = default;
-  void insertMessageQ(std::string &str_in) {
+  void insertMessageQ(std::string *str_in) {
     if (_message_q.size() < _max_q_size) {
       _message_q.push_back(str_in);
     } else {
@@ -40,22 +43,36 @@ public:
 
   void printMessageQ(cv::Mat &frame) {
     for (int i = 0; i < _message_q.size(); i++) {
-      cvui::printf(frame, std::lround(scaling * 55),
-                   std::lround(scaling * 165 + (12 * i)),
-                   scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00,
-                   _message_q[i].c_str());
+      for (int j = 0; j < NUMLINE_ROBOTINFO_MSG; j++)
+        cvui::printf(
+            frame, std::lround(scaling * 55),
+            std::lround(scaling *
+                        (165 + (10 * NUMLINE_ROBOTINFO_MSG * i) + (10 * j))),
+            scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00,
+            _message_q[i][j].c_str());
     }
   };
 };
-MessageQ window_queue(20);
+MessageQ window_queue(MAX_Q_SIZE);
 float robot_odom_x = 0;
 float robot_odom_y = 0;
 float robot_odom_z = 0;
 
 void robot_infoCallback(const robot_gui::RobotInfo_msg::ConstPtr &msg) {
   // ROS_INFO("%s", msg->data_field_01.c_str());
-  std::string d1(msg->data_field_01.c_str());
-  window_queue.insertMessageQ(d1);
+  std::string *arraySTextBuffer = new std::string[NUMLINE_ROBOTINFO_MSG];
+
+  arraySTextBuffer[0] = std::string(msg->data_field_01.c_str());
+  arraySTextBuffer[1] = std::string(msg->data_field_02.c_str());
+  arraySTextBuffer[2] = std::string(msg->data_field_03.c_str());
+  arraySTextBuffer[3] = std::string(msg->data_field_04.c_str());
+  arraySTextBuffer[4] = std::string(msg->data_field_05.c_str());
+  arraySTextBuffer[5] = std::string(msg->data_field_06.c_str());
+  arraySTextBuffer[6] = std::string(msg->data_field_07.c_str());
+  arraySTextBuffer[7] = std::string(msg->data_field_08.c_str());
+  arraySTextBuffer[8] = std::string(msg->data_field_09.c_str());
+  arraySTextBuffer[9] = std::string(msg->data_field_10.c_str());
+  window_queue.insertMessageQ(arraySTextBuffer);
 };
 
 void odomCallback(const nav_msgs::Odometry::ConstPtr &msg) {
@@ -139,8 +156,8 @@ int main(int argc, char **argv) {
     sprintf(textBuffer, "Trackbar  %.2f", trackbarValue);
     std::string STextBuffer(textBuffer);
     // window_queue.insertMessageQ(STextBuffer);
-    cvui::rect(frame, 10, 20, 530, 560, 0xaf55af);
-    cvui::rect(frame, 550, 20, 440, 560, 0xaf55af);
+    cvui::rect(frame, 10, 20, 530, 990, 0xaf55af);
+    cvui::rect(frame, 550, 20, 440, 990, 0xaf55af);
     // cvui::text(frame, std::lround(scaling * 200), std::lround(scaling * 30),
     // textBuffer, scaling*cvui::DEFAULT_FONT_SCALE, 0xff0000);
 
