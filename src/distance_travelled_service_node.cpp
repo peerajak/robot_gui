@@ -69,7 +69,7 @@ bool getDistance_callback(std_srvs::Trigger::Request &req,
   std::string resMessage(
       std::to_string(position_list.get_travelled_distance_lambda()));
   res.message = resMessage;
-  ROS_INFO("sending back response:true");
+  ROS_DEBUG("sending back response:true");
   return res.success;
 }
 
