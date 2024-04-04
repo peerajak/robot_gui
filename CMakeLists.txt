@@ -218,3 +218,8 @@ set(CMAKE_BUILD_TYPE Debug)
 add_dependencies(robot_gui_node robot_gui_generate_messages_cpp)
 
 
+add_executable(robot_gui_distance_travelled_service_node src/distance_travelled_service_node.cpp)
+target_link_libraries(robot_gui_distance_travelled_service_node
+ ${catkin_LIBRARIES}  
+ )
+add_dependencies(robot_gui_distance_travelled_service_node robot_gui_generate_messages_cpp)

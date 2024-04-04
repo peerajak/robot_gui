@@ -21,7 +21,7 @@
 
 #define WINDOW_NAME "Info"
 #define NUMLINE_ROBOTINFO_MSG 10
-#define MAX_Q_SIZE 6
+#define MAX_Q_SIZE 1
 
 double scaling = 1.0;
 
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
   while (ros::ok()) {
 
     if (scaling != currentScaling) {
-      frame = cv::Mat(std::lround(scaling * 900), std::lround(scaling * 1000),
+      frame = cv::Mat(std::lround(scaling * 360), std::lround(scaling * 640),
                       CV_8UC3);
       currentScaling = scaling;
     }
@@ -156,8 +156,8 @@ int main(int argc, char **argv) {
                0xff0000);
 
     // Divide frame into two rectangles
-    cvui::rect(frame, 10, 20, 530, 990, 0xaf55af);
-    cvui::rect(frame, 550, 20, 440, 990, 0xaf55af);
+    cvui::rect(frame, 10, 20, 290, 320, 0xaf55af);
+    cvui::rect(frame, 310, 20, 320, 320, 0xaf55af);
 
     /************************************************
      *                Teleopt Button
@@ -180,8 +180,7 @@ int main(int argc, char **argv) {
             std::lround(scaling * botton_size * 2),
             std::lround(scaling * botton_size), "Up",
             scaling * cvui::DEFAULT_FONT_SCALE)) {
-      linear_velocity_up = botton_teleopt_step;
-      angular_velocity_left = 0;
+      linear_velocity_up += botton_teleopt_step;
     }
 
     if (cvui::button(
@@ -190,8 +189,7 @@ int main(int argc, char **argv) {
             std::lround(scaling * botton_size * 2),
             std::lround(scaling * botton_size), "Down",
             scaling * cvui::DEFAULT_FONT_SCALE)) {
-      linear_velocity_up = -botton_teleopt_step;
-      angular_velocity_left = 0;
+      linear_velocity_up -= botton_teleopt_step;
     }
 
     if (cvui::button(frame, std::lround(scaling * (80 - botton_size * 2)),
@@ -199,16 +197,14 @@ int main(int argc, char **argv) {
                      std::lround(scaling * botton_size * 2),
                      std::lround(scaling * botton_size), "Left",
                      scaling * cvui::DEFAULT_FONT_SCALE)) {
-      linear_velocity_up = 0;
-      angular_velocity_left = botton_teleopt_step;
+      angular_velocity_left += botton_teleopt_step;
     }
     if (cvui::button(frame, std::lround(scaling * (80 + botton_size * 2)),
                      std::lround(scaling * botton_teleopt_position_y),
                      std::lround(scaling * botton_size * 2),
                      std::lround(scaling * botton_size), "Right",
                      scaling * cvui::DEFAULT_FONT_SCALE)) {
-      linear_velocity_up = 0;
-      angular_velocity_left = -botton_teleopt_step;
+      angular_velocity_left -= botton_teleopt_step;
     }
 
     setTwistMessage(linear_velocity_up, 0, 0, 0, 0, angular_velocity_left);
@@ -218,7 +214,7 @@ int main(int argc, char **argv) {
      *          General Area
      *************************************************/
     cvui::window(frame, std::lround(scaling * 20), std::lround(scaling * 150),
-                 std::lround(scaling * 500), std::lround(scaling * 400), "Info",
+                 std::lround(scaling * 265), std::lround(scaling * 160), "Info",
                  scaling * cvui::DEFAULT_FONT_SCALE);
 
     window_queue.printMessageQ(frame);
@@ -227,26 +223,26 @@ int main(int argc, char **argv) {
      *          Current Velocity
      *************************************************/
 
-    cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 40),
+    cvui::text(frame, std::lround(scaling * 320), std::lround(scaling * 40),
                "Linear Velocity", scaling * cvui::DEFAULT_FONT_SCALE, 0xff0000);
 
-    cvui::text(frame, std::lround(scaling * 720), std::lround(scaling * 40),
+    cvui::text(frame, std::lround(scaling * 440), std::lround(scaling * 40),
                std::to_string(linear_velocity_up).c_str(),
                scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
-    cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 60),
+    cvui::text(frame, std::lround(scaling * 320), std::lround(scaling * 60),
                "Angular Velocity", scaling * cvui::DEFAULT_FONT_SCALE,
                0xff0000);
-    cvui::text(frame, std::lround(scaling * 720), std::lround(scaling * 60),
+    cvui::text(frame, std::lround(scaling * 440), std::lround(scaling * 60),
                std::to_string(angular_velocity_left).c_str(),
                scaling * cvui::DEFAULT_FONT_SCALE, 0x00ff00);
 
     /*************************************************
      *          Robot Position (odometry based)
      *************************************************/
-    cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 140),
+    cvui::text(frame, std::lround(scaling * 320), std::lround(scaling * 140),
                "Estimate robot position based of odometry",
                scaling * cvui::DEFAULT_FONT_SCALE, 0xff0000);
-    cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 150),
+    cvui::text(frame, std::lround(scaling * 440), std::lround(scaling * 150),
                "x", scaling * cvui::DEFAULT_FONT_SCALE * 1.5, 0xff0000);
     char robot_odom_x_buffer[11];
     char robot_odom_y_buffer[11];
@@ -254,17 +250,17 @@ int main(int argc, char **argv) {
     sprintf(robot_odom_x_buffer, "%3.6f", robot_odom_x);
     sprintf(robot_odom_y_buffer, "%3.6f", robot_odom_y);
     sprintf(robot_odom_z_buffer, "%3.6f", robot_odom_z);
-    cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 170),
+    cvui::text(frame, std::lround(scaling * 320), std::lround(scaling * 170),
                robot_odom_x_buffer, scaling * cvui::DEFAULT_FONT_SCALE,
                0x00ff00);
-    cvui::text(frame, std::lround(scaling * 700), std::lround(scaling * 150),
+    cvui::text(frame, std::lround(scaling * 420), std::lround(scaling * 150),
                "y", scaling * cvui::DEFAULT_FONT_SCALE * 1.5, 0xff0000);
-    cvui::text(frame, std::lround(scaling * 700), std::lround(scaling * 170),
+    cvui::text(frame, std::lround(scaling * 420), std::lround(scaling * 170),
                robot_odom_y_buffer, scaling * cvui::DEFAULT_FONT_SCALE,
                0x00ff00);
-    cvui::text(frame, std::lround(scaling * 800), std::lround(scaling * 150),
+    cvui::text(frame, std::lround(scaling * 500), std::lround(scaling * 150),
                "z", scaling * cvui::DEFAULT_FONT_SCALE * 1.5, 0xff0000);
-    cvui::text(frame, std::lround(scaling * 800), std::lround(scaling * 170),
+    cvui::text(frame, std::lround(scaling * 500), std::lround(scaling * 170),
                robot_odom_z_buffer, scaling * cvui::DEFAULT_FONT_SCALE,
                0x00ff00);
 
@@ -272,11 +268,11 @@ int main(int argc, char **argv) {
      *          Distance Travel Service
      *************************************************/
 
-    cvui::text(frame, std::lround(scaling * 600), std::lround(scaling * 195),
+    cvui::text(frame, std::lround(scaling * 320), std::lround(scaling * 195),
                "Distance Travelled", scaling * cvui::DEFAULT_FONT_SCALE,
                0xff0000);
 
-    if (cvui::button(frame, std::lround(scaling * 600),
+    if (cvui::button(frame, std::lround(scaling * 320),
                      std::lround(scaling * 210), "Call",
                      scaling * cvui::DEFAULT_FONT_SCALE)) {
 
@@ -284,7 +280,7 @@ int main(int argc, char **argv) {
                        &getDistance_service, &srv);
       fut_got_initialized = true;
     }
-    cvui::text(frame, std::lround(scaling * 670), std::lround(scaling * 220),
+    cvui::text(frame, std::lround(scaling * 390), std::lround(scaling * 220),
                "Distance in meters", scaling * cvui::DEFAULT_FONT_SCALE,
                0xff0000);
     if (fut_got_initialized) {
@@ -302,7 +298,7 @@ int main(int argc, char **argv) {
 
     if (!get_distance_success)
       get_distance_message = "-------";
-    cvui::text(frame, std::lround(scaling * 670), std::lround(scaling * 230),
+    cvui::text(frame, std::lround(scaling * 390), std::lround(scaling * 230),
                get_distance_message.c_str(), scaling * cvui::DEFAULT_FONT_SCALE,
                0x00ff00);
     /***************End UI design******/
