@@ -32,14 +32,16 @@ private:
 
 public:
   MessageQ(int max_q_size) { this->_max_q_size = max_q_size; };
-  ~MessageQ() = default;
+  ~MessageQ() {
+    for (auto item : _message_q)
+      delete[] item;
+  };
   void insertMessageQ(std::string *str_in) {
-    if (_message_q.size() < _max_q_size) {
-      _message_q.push_back(str_in);
-    } else {
+    if (_message_q.size() >= _max_q_size) {
+      delete[] _message_q.front();
       _message_q.pop_front();
-      _message_q.push_back(str_in);
     }
+    _message_q.push_back(str_in);
   };
 
   void printMessageQ(cv::Mat &frame) {
